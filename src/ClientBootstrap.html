@@ -1,4 +1,16 @@
 var ClientBootstrap=(function(){
+  // Mask server-rendered placeholders until Apps Script supplies fresh configuration.
+  // This prevents a brief flash of a previous event title or show data on refresh.
+  if(typeof document!=='undefined'){
+    var style=document.createElement('style');
+    style.textContent='.pac-loading{position:fixed;inset:0;z-index:9999;display:grid;place-items:center;background:#28134d;color:#fff;font:600 17px system-ui,-apple-system,sans-serif;text-align:center}.pac-loading i{display:block;width:34px;height:34px;border:3px solid #ffffff44;border-top-color:#fff;border-radius:50%;margin:0 auto 14px;animation:pac-spin .8s linear infinite}@keyframes pac-spin{to{transform:rotate(360deg)}}';
+    document.head.appendChild(style);
+    var loading=document.createElement('div'); loading.className='pac-loading'; loading.id='pacLoading'; loading.innerHTML='<div><i></i>กำลังโหลดข้อมูลงาน…</div>'; document.body.appendChild(loading);
+    var shows=document.getElementById('shows');
+    if(shows && typeof MutationObserver!=='undefined') new MutationObserver(function(){if(shows.querySelector('button')){loading.remove();this.disconnect();}}).observe(shows,{childList:true});
+    // On a real loading failure, reveal the Thai error message instead of trapping the visitor.
+    setTimeout(function(){var error=document.querySelector('#message .error');if(error&&loading.isConnected)loading.remove();},6000);
+  }
   function fail(message){throw new Error(message);}
   function number(value,label){if(typeof value!=='number'||!isFinite(value))fail(label+' must be a number.');}
   function parseConfig(raw){if(typeof raw!=='string'||!raw)fail('Configuration response is missing.');try{return JSON.parse(raw);}catch(error){fail('Configuration response is not valid JSON.');}}
