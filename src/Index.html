@@ -7,7 +7,8 @@ body{font:16px system-ui,sans-serif;margin:0;background:#f7f6fb;color:#1d1b24}.w
 <section class="card"><h2>Check booking status</h2><label>Booking ID<input id="lookupCode"></label><label>Phone number<input id="lookupPhone" type="tel"></label><button onclick="lookup()">Check status</button><div id="lookupResult"></div></section></main>
 <script>
 let cfg, selected, slipData; const $=id=>document.getElementById(id); const fmt=n=>Number(n).toLocaleString('en-US')+' THB';
-window.addEventListener('load',()=>google.script.run.withSuccessHandler(init).withFailureHandler(error).getPublicConfig());
+function loadConfig(){if(!(window.google&&google.script&&google.script.run)){setTimeout(loadConfig,250);return}google.script.run.withSuccessHandler(init).withFailureHandler(error).getPublicConfig()}
+setTimeout(loadConfig,500);
 function init(data){cfg=data;$('event').textContent=data.eventName;$('desc').textContent=data.description||'';$('shows').innerHTML='';data.performances.forEach(p=>{let b=document.createElement('button');b.className='show '+(!p.available?'sold':'');b.disabled=!p.available;b.innerHTML=`<div class="row"><strong>${pretty(p)}</strong><strong>${p.available?p.remaining+' / '+p.capacity+' tickets remaining':'SOLD OUT'}</strong></div><small>${fmt(data.ticketPrice)} each</small>`;b.onclick=()=>choose(p,b);$('shows').appendChild(b)});$('quantity').oninput=updateTotal;$('slip').onchange=readSlip;}
 function pretty(p){return new Date(p.date+'T00:00:00').toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'})+' · '+p.start_time}
 function choose(p,b){selected=p;document.querySelectorAll('.show').forEach(x=>x.classList.remove('selected'));b.classList.add('selected');$('step2').classList.remove('hidden');updateTotal();scrollTo({top:$('step2').offsetTop,behavior:'smooth'});}
