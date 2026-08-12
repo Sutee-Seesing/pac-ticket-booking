@@ -1,0 +1,5 @@
+{
+  "timeZone": "Asia/Bangkok",
+  "runtimeVersion": "V8",
+  "webapp": { "access": "ANYONE_ANONYMOUS", "executeAs": "USER_DEPLOYING" }
+}

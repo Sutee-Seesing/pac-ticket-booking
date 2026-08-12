@@ -1,0 +1,5 @@
+{
+  "name": "pac-ticket-booking",
+  "private": true,
+  "scripts": { "test": "node --test test/domain.test.js" }
+}
