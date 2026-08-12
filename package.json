@@ -1,5 +1,5 @@
 {
   "name": "pac-ticket-booking",
   "private": true,
-  "scripts": { "test": "node --test test/domain.test.js" }
+  "scripts": { "test": "node --test test/*.test.js" }
 }

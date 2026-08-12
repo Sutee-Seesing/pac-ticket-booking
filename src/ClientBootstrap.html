@@ -1,0 +1,19 @@
+var ClientBootstrap=(function(){
+  function fail(message){throw new Error(message);}
+  function number(value,label){if(typeof value!=='number'||!isFinite(value))fail(label+' must be a number.');}
+  function validateConfig(data){
+    if(!data||typeof data!=='object')fail('Configuration response is missing.');
+    if(typeof data.eventName!=='string'||!data.eventName.trim())fail('eventName is missing.');
+    number(data.ticketPrice,'ticketPrice');
+    if(!Array.isArray(data.performances))fail('performances is not an array.');
+    data.performances.forEach(function(performance,index){
+      if(!performance||typeof performance!=='object')fail('performance '+index+' is invalid.');
+      ['performance_id','date','start_time'].forEach(function(key){if(typeof performance[key]!=='string'||!performance[key])fail('performance '+index+' is missing '+key+'.');});
+      number(performance.capacity,'performance '+index+' capacity');
+      number(performance.remaining,'performance '+index+' remaining');
+      if(typeof performance.available!=='boolean')fail('performance '+index+' available must be boolean.');
+    });
+    return data;
+  }
+  return {validateConfig:validateConfig};
+})();

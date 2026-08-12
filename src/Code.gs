@@ -1,13 +1,16 @@
 /* PAC ticket booking M1. Sheet bookings are the capacity source of truth. */
 var CONFIG = { SHEETS: { SETTINGS:'Settings', PERFORMANCES:'Performances', BOOKINGS:'Bookings', AUDIT:'AuditLog' }, MAX_SLIP_BYTES: 5 * 1024 * 1024, ALLOWED_MIME: ['image/jpeg','image/png','image/webp'] };
+// Update this deliberately for each source change that needs live-deployment tracing.
+var BUILD_ID = '5116060-bootstrap-diagnostics';
 var HEADERS = {
   Settings:['key','value'],
   Performances:['performance_id','date','start_time','capacity','active'],
   Bookings:['internal_booking_id','booking_code','created_at','updated_at','performance_id','performance_date','performance_time','customer_name','customer_phone','ticket_quantity','price_per_ticket','total_amount','payment_slip_file_id','status','reviewed_at','reviewer','admin_note','request_id'],
   AuditLog:['timestamp','booking_code','previous_state','new_state','action','actor','metadata']
 };
-function doGet(e) { var page = e && e.parameter && e.parameter.page === 'admin' ? 'Admin' : 'Index'; var title='PAC Performance 2026'; try { if (spreadsheet_().getSheetByName(CONFIG.SHEETS.SETTINGS)) title=getSettings_().EVENT_NAME || title; } catch (ignored) {} return HtmlService.createTemplateFromFile(page).evaluate().setTitle(title); }
+function doGet(e) { var page = e && e.parameter && e.parameter.page === 'admin' ? 'Admin' : 'Index'; var title='PAC Performance 2026'; try { if (spreadsheet_().getSheetByName(CONFIG.SHEETS.SETTINGS)) title=getSettings_().EVENT_NAME || title; } catch (ignored) {} var template=HtmlService.createTemplateFromFile(page); template.buildInfo=getBuildInfo(); return template.evaluate().setTitle(title); }
 function include(name) { return HtmlService.createHtmlOutputFromFile(name).getContent(); }
+function getBuildInfo() { var id=PropertiesService.getScriptProperties().getProperty('SPREADSHEET_ID') || ''; return { buildId:BUILD_ID, appVersion:'M1', spreadsheetIdSuffix:id ? id.slice(-6) : 'not-configured' }; }
 function setup() {
   var ss = spreadsheet_(); Object.keys(HEADERS).forEach(function (name) { var sh = ss.getSheetByName(name) || ss.insertSheet(name); if (sh.getLastRow() === 0) sh.appendRow(HEADERS[name]); });
   var settings = { EVENT_NAME:'PAC Performance 2026', EVENT_DESCRIPTION:'University theatre performance', POSTER_URL:'', LOGO_URL:'', TICKET_PRICE:'120', BANK_NAME:'Krungthai Bank', BANK_ACCOUNT_NUMBER:'4673401352', BANK_ACCOUNT_HOLDER:'SET_ACCOUNT_HOLDER_NAME', SUPPORT_CONTACT:'SET_SUPPORT_CONTACT', TIMEZONE:'Asia/Bangkok', SLIP_FOLDER_ID:'' };
