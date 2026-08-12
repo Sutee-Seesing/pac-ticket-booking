@@ -6,7 +6,7 @@ var HEADERS = {
   Bookings:['internal_booking_id','booking_code','created_at','updated_at','performance_id','performance_date','performance_time','customer_name','customer_phone','ticket_quantity','price_per_ticket','total_amount','payment_slip_file_id','status','reviewed_at','reviewer','admin_note','request_id'],
   AuditLog:['timestamp','booking_code','previous_state','new_state','action','actor','metadata']
 };
-function doGet(e) { var page = e && e.parameter && e.parameter.page === 'admin' ? 'Admin' : 'Index'; return HtmlService.createTemplateFromFile(page).evaluate().setTitle(getSettings_().EVENT_NAME || 'PAC Performance 2026'); }
+function doGet(e) { var page = e && e.parameter && e.parameter.page === 'admin' ? 'Admin' : 'Index'; var title='PAC Performance 2026'; try { if (spreadsheet_().getSheetByName(CONFIG.SHEETS.SETTINGS)) title=getSettings_().EVENT_NAME || title; } catch (ignored) {} return HtmlService.createTemplateFromFile(page).evaluate().setTitle(title); }
 function include(name) { return HtmlService.createHtmlOutputFromFile(name).getContent(); }
 function setup() {
   var ss = spreadsheet_(); Object.keys(HEADERS).forEach(function (name) { var sh = ss.getSheetByName(name) || ss.insertSheet(name); if (sh.getLastRow() === 0) sh.appendRow(HEADERS[name]); });
