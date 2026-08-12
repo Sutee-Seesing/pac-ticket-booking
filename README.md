@@ -10,10 +10,10 @@ The included four shows are 21 Aug 17:00 / 19:00 and 22 Aug 17:00 / 19:00, 50 ca
 
 ## Deploy (owner steps)
 
-1. Create a blank Google Sheet, then **Extensions → Apps Script**.
+1. Create a blank Google Sheet. For a standalone Apps Script project (like the one in the Apps Script home screen), copy the Sheet ID from its URL and add it as the Script Property `SPREADSHEET_ID`. A Sheet-bound project may omit this property.
 2. Install [clasp](https://github.com/google/clasp) locally, copy `.clasp.json.example` to `.clasp.json`, add the Apps Script project ID, then run `clasp push` from this folder. Alternatively copy the files under `src/` into Apps Script (each source file becomes an `.gs` or `.html` file).
 3. In the Apps Script editor select and run `setup` once; approve Spreadsheet and Drive permissions. It is safe to run again.
-4. In **Project Settings → Script properties**, add a long random `ADMIN_TOKEN` value. Do not place it in the sheet or client code.
+4. In **Project Settings → Script properties**, add `SPREADSHEET_ID` (for a standalone project) and a long random `ADMIN_TOKEN` value. Do not place the token in the sheet or client code.
 5. Edit `Settings`: at minimum replace `SET_ACCOUNT_HOLDER_NAME` and `SET_SUPPORT_CONTACT`; optionally add event name, poster URL and logo URL.
 6. **Deploy → New deployment → Web app**. Customer deployments may allow anyone; execute as the deploying owner so it can write Sheets and Drive. For real safety, deploy a separate, domain-restricted admin deployment if your university Google Workspace allows it. The same web app supports `/exec?page=admin`, but every admin server action still requires the private token.
 
