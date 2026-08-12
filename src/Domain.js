@@ -35,6 +35,16 @@ var BookingDomain = (function () {
   function matchBooking(b, query) { var q=String(query||'').trim().toLowerCase(); if(!q)return true; return [b.booking_code,b.customer_name,b.customer_phone].some(function(v){return String(v||'').toLowerCase().indexOf(q)>=0;}); }
   function hasDuplicateActive(b, all) { return all.filter(function(x){return x.booking_code!==b.booking_code && x.performance_id===b.performance_id && String(x.customer_phone)===String(b.customer_phone) && (x.status===STATES.WAITING||x.status===STATES.CONFIRMED);}).length>0; }
   function csvEscape(value) { var s=String(value == null ? '' : value); return /[",\n\r]/.test(s) ? '"'+s.replace(/"/g,'""')+'"' : s; }
-  return { STATES: STATES, intQuantity: intQuantity, assertQuantity: assertQuantity, availability: availability, canTransition: canTransition, releaseRequired: releaseRequired, bookingCode: bookingCode, escapeCell: escapeCell, statusLabel:statusLabel, thaiDateTime:thaiDateTime, bookingMetrics:bookingMetrics, matchBooking:matchBooking, hasDuplicateActive:hasDuplicateActive, csvEscape:csvEscape };
+  function parseBangkok(value) { return value instanceof Date ? value.getTime() : new Date(String(value)).getTime(); }
+  function calculateBookingPrice(quantity, bookingTime, settings) {
+    var q=assertQuantity(quantity), base=Number(settings.BASE_TICKET_PRICE || settings.TICKET_PRICE || 120), start=parseBangkok(settings.PROMO_START_AT), end=parseBangkok(settings.PROMO_END_AT), active=String(settings.PROMO_ENABLED)==='true' && parseBangkok(bookingTime)>=start && parseBangkok(bookingTime)<=end;
+    if(!active) return { pricingType:'NORMAL', total:q*base, effectiveUnitPrice:base, breakdown:'ราคาปกติ '+base+' บาท / ใบ', promoActive:false };
+    var size=Number(settings.PROMO_BUNDLE_SIZE||2), bundle=Number(settings.PROMO_BUNDLE_PRICE||200), pairs=Math.floor(q/size), odd=q%size, total=pairs*bundle+odd*base;
+    return { pricingType:'PROMO_PAIR_200', total:total, effectiveUnitPrice:total/q, breakdown:(pairs ? 'โปร '+size+' ใบ '+bundle+' บาท × '+pairs+(odd?' · เพิ่ม '+odd+' ใบ '+(odd*base)+' บาท':'') : 'บัตรปกติ '+base+' บาท / ใบ'), promoActive:true, bundleCount:pairs, remainder:odd, bundleSize:size, bundlePrice:bundle, basePrice:base };
+  }
+  function salesCloseAt(performance) { return performance.sales_close_at || (String(performance.date).slice(0,10)+'T23:59:59+07:00').replace(/^(\d{4}-\d{2}-\d{2})/,function(date){var d=new Date(date+'T12:00:00Z');d.setUTCDate(d.getUTCDate()-1);return d.toISOString().slice(0,10);}); }
+  function onlineSalesOpen(performance, now) { return parseBangkok(now)<=parseBangkok(salesCloseAt(performance)); }
+  function salesState(performance, bookings, now) { var remaining=availability(performance,bookings); if(remaining<=0)return 'SOLD_OUT'; return onlineSalesOpen(performance,now)?'AVAILABLE':'ONLINE_CLOSED'; }
+  return { STATES: STATES, intQuantity: intQuantity, assertQuantity: assertQuantity, availability: availability, canTransition: canTransition, releaseRequired: releaseRequired, bookingCode: bookingCode, escapeCell: escapeCell, statusLabel:statusLabel, thaiDateTime:thaiDateTime, bookingMetrics:bookingMetrics, matchBooking:matchBooking, hasDuplicateActive:hasDuplicateActive, csvEscape:csvEscape, calculateBookingPrice:calculateBookingPrice, salesCloseAt:salesCloseAt, onlineSalesOpen:onlineSalesOpen, salesState:salesState };
 }());
 if (typeof module !== 'undefined') module.exports = BookingDomain;

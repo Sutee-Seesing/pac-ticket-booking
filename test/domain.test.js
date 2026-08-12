@@ -31,3 +31,11 @@ test('22 M2 metrics distinguish booking, ticket, and confirmed revenue',()=>{con
 test('23 search supports booking code, name, and partial phone',()=>{assert.ok(D.matchBooking(rows[0],'PAC-001'));assert.ok(D.matchBooking(rows[0],'ใจดี'));assert.ok(D.matchBooking(rows[0],'4432'));assert.ok(!D.matchBooking(rows[0],'9999'))});
 test('24 performance and active-phone duplicate warning detected',()=>assert.equal(D.hasDuplicateActive(rows[0],[...rows,{booking_code:'PAC-005',customer_phone:'0812344432',performance_id:'P1',status:D.STATES.CONFIRMED,ticket_quantity:1}]),true));
 test('25 CSV output escapes Thai text, commas and quotes',()=>assert.equal(D.csvEscape('สมหญิง, "PAC"'),'"สมหญิง, ""PAC"""'));
+const pricing={BASE_TICKET_PRICE:120,PROMO_ENABLED:'true',PROMO_START_AT:'2026-08-14T00:00:00+07:00',PROMO_END_AT:'2026-08-16T23:59:59+07:00',PROMO_BUNDLE_SIZE:2,PROMO_BUNDLE_PRICE:200};
+test('26 promo is inactive before 14 Aug',()=>assert.equal(D.calculateBookingPrice(2,'2026-08-13T23:59:59+07:00',pricing).total,240));
+test('27 promo boundary start and end are included',()=>{assert.equal(D.calculateBookingPrice(2,'2026-08-14T00:00:00+07:00',pricing).total,200);assert.equal(D.calculateBookingPrice(2,'2026-08-16T23:59:59+07:00',pricing).total,200)});
+test('28 promo ends after exact cutoff',()=>assert.equal(D.calculateBookingPrice(2,'2026-08-17T00:00:00+07:00',pricing).total,240));
+test('29 promo pricing handles odd quantities',()=>assert.deepEqual([1,2,3,4,5].map(q=>D.calculateBookingPrice(q,'2026-08-15T12:00:00+07:00',pricing).total),[120,200,320,400,520]));
+const show21={date:'2026-08-21',capacity:50,performance_id:'P1'};
+test('30 online sales close on prior calendar day Bangkok',()=>{assert.equal(D.onlineSalesOpen(show21,'2026-08-20T23:59:59+07:00'),true);assert.equal(D.onlineSalesOpen(show21,'2026-08-21T00:00:00+07:00'),false)});
+test('31 sales-closed differs from sold-out and door count derives safely',()=>{assert.equal(D.salesState(show21,[w(35,D.STATES.CONFIRMED),w(5)],'2026-08-21T00:00:00+07:00'),'ONLINE_CLOSED');assert.equal(D.availability(show21,[w(35,D.STATES.CONFIRMED),w(5)]),10);assert.equal(D.salesState(show21,[w(50)],'2026-08-20T12:00:00+07:00'),'SOLD_OUT')});
