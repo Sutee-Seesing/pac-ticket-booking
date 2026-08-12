@@ -19,3 +19,15 @@ test('16 booking IDs are readable and unique by sequence',()=>{assert.equal(D.bo
 test('17 invalid booking sequence rejected',()=>assert.throws(()=>D.bookingCode('2026-08-21','17:00',0)));
 test('18 formula injection neutralized',()=>assert.equal(D.escapeCell('=2+2'),"'=2+2"));
 test('19 plain text preserved',()=>assert.equal(D.escapeCell('Ada'),'Ada'));
+test('20 Thai-facing status mapper never exposes internal status',()=>assert.equal(D.statusLabel(D.STATES.WAITING),'รอตรวจสอบสลิป'));
+test('21 Thai date/time uses Buddhist year',()=>assert.match(D.thaiDateTime('2026-08-21','17:00'),/2569.*17:00/));
+const rows=[
+ {booking_code:'PAC-001',customer_name:'สมหญิง ใจดี',customer_phone:'0812344432',performance_id:'P1',ticket_quantity:2,status:D.STATES.WAITING},
+ {booking_code:'PAC-002',customer_name:'Anan',customer_phone:'0890004432',performance_id:'P1',ticket_quantity:3,status:D.STATES.CONFIRMED},
+ {booking_code:'PAC-003',customer_name:'B',customer_phone:'0800000000',performance_id:'P2',ticket_quantity:1,status:D.STATES.REJECTED},
+ {booking_code:'PAC-004',customer_name:'C',customer_phone:'0801111111',performance_id:'P2',ticket_quantity:4,status:D.STATES.CANCELLED}
+];
+test('22 M2 metrics distinguish booking, ticket, and confirmed revenue',()=>{const m=D.bookingMetrics(rows,120);assert.deepEqual(m.waiting,{bookings:1,tickets:2});assert.deepEqual(m.confirmed,{bookings:1,tickets:3});assert.equal(m.confirmedRevenue,360);assert.equal(m.rejected.bookings,1);assert.equal(m.cancelled.tickets,4)});
+test('23 search supports booking code, name, and partial phone',()=>{assert.ok(D.matchBooking(rows[0],'PAC-001'));assert.ok(D.matchBooking(rows[0],'ใจดี'));assert.ok(D.matchBooking(rows[0],'4432'));assert.ok(!D.matchBooking(rows[0],'9999'))});
+test('24 performance and active-phone duplicate warning detected',()=>assert.equal(D.hasDuplicateActive(rows[0],[...rows,{booking_code:'PAC-005',customer_phone:'0812344432',performance_id:'P1',status:D.STATES.CONFIRMED,ticket_quantity:1}]),true));
+test('25 CSV output escapes Thai text, commas and quotes',()=>assert.equal(D.csvEscape('สมหญิง, "PAC"'),'"สมหญิง, ""PAC"""'));

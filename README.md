@@ -1,47 +1,39 @@
-# PAC Ticket Booking (M1)
+# PAC Ticket Booking — M2
 
-A lightweight Google Apps Script + Google Sheets ticketing system for the 21–22 August 2026 PAC performances. Customers choose a show, pay, attach an image slip, and receive a reservation waiting for staff review. Staff confirm or reject in a separate dashboard.
+ระบบจองบัตรการแสดงแบบ Google Apps Script + Google Sheets สำหรับทีม PAC โดย Google Sheets เป็นแหล่งข้อมูลจริงและข้อมูลสำรองเพียงชุดเดียว
 
-## What keeps capacity correct
+## สิ่งที่มีใน M2
 
-Bookings in `WAITING_PAYMENT_REVIEW` and `CONFIRMED` are the source of truth for reserved tickets; there is no editable “remaining” counter. Final submission takes a Script Lock, reloads all bookings, checks capacity, writes the slip then booking, and releases the lock. Rejecting or cancelling a reserved booking stops it counting as reserved. Repeating a decision is idempotent and cannot return quota twice.
+- หน้า Customer ภาษาไทยแบบ 4 ขั้นตอน: เลือกรอบ → ข้อมูลผู้จอง → ชำระเงิน/แนบสลิป → บัตรยืนยันการรับจอง
+- ออกแบบ mobile-first พร้อมสรุปยอด คัดลอกเลขบัญชี ตัวอย่างสลิป และตรวจสอบสถานะ
+- หน้า Admin ภาษาไทย: ภาพรวม, คิวรอตรวจ, ยืนยันแล้ว, ปฏิเสธ/ยกเลิก, รายการทั้งหมด
+- ค้นหาจากรหัส ชื่อ หรือบางส่วนของเบอร์โทร กรองสถานะ/รอบ และแจ้งเตือนรายการที่ใช้เบอร์ซ้ำในรอบเดียวกัน
+- รายได้ที่ยืนยันแล้วคำนวณจากบัตรสถานะ `CONFIRMED` เท่านั้น
+- ดูสลิปและรายละเอียดใน Admin, ยืนยัน/ปฏิเสธ/ยกเลิกผ่าน modal ที่ไม่ใช้ browser prompt/confirm
+- Server API สำหรับข้อมูล Admin และ CSV UTF-8 โดยไม่ส่ง Admin token หรือ Drive file ID ไปยัง client
 
-The included four shows are 21 Aug 17:00 / 19:00 and 22 Aug 17:00 / 19:00, 50 capacity each, THB 120 each. Event content, banking, support, images, and Drive folder are in the `Settings` sheet.
+## กติกาการจองที่คงเดิม
 
-## Deploy (owner steps)
+มี 4 รอบ รอบละ 50 ใบ ราคา 120 บาท/ใบ ไม่มีเลขที่นั่ง ระบบอนุญาตจำนวนบัตรตามที่เหลือเท่านั้น ทุกคำขอจองสำรองโควตาทันทีในสถานะ `WAITING_PAYMENT_REVIEW` และใช้ `LockService` ป้องกันการจองชนกัน
 
-1. Create a blank Google Sheet. For a standalone Apps Script project (like the one in the Apps Script home screen), copy the Sheet ID from its URL and add it as the Script Property `SPREADSHEET_ID`. A Sheet-bound project may omit this property.
-2. Install [clasp](https://github.com/google/clasp) locally, copy `.clasp.json.example` to `.clasp.json`, add the Apps Script project ID, then run `clasp push` from this folder. Alternatively copy the files under `src/` into Apps Script (each source file becomes an `.gs` or `.html` file).
-3. In the Apps Script editor select and run `setup` once; approve Spreadsheet and Drive permissions. It is safe to run again.
-4. In **Project Settings → Script properties**, add `SPREADSHEET_ID` (for a standalone project) and a long random `ADMIN_TOKEN` value. Do not place the token in the sheet or client code.
-5. Edit `Settings`: at minimum replace `SET_ACCOUNT_HOLDER_NAME` and `SET_SUPPORT_CONTACT`; optionally add event name, poster URL and logo URL.
-6. **Deploy → New deployment → Web app**. Customer deployments may allow anyone; execute as the deploying owner so it can write Sheets and Drive. For real safety, deploy a separate, domain-restricted admin deployment if your university Google Workspace allows it. The same web app supports `/exec?page=admin`, but every admin server action still requires the private token.
+`WAITING_PAYMENT_REVIEW` และ `CONFIRMED` นับเป็นบัตรที่ถูกสำรอง การปฏิเสธหรือยกเลิกคืนโควตาได้ครั้งเดียวเท่านั้น การทำรายการสถานะซ้ำเป็น idempotent และมี Audit Log เสมอ
 
-### Drive permissions
+## ตั้งค่าและใช้งาน
 
-`setup` creates a private `PAC Payment Slips` folder owned by the deployment owner. Do not share it publicly. Staff who need to open slips must be granted Viewer access to the folder (or be the owner). The app stores only a Drive file ID in the Sheet and opens the normal Drive viewer for authorized staff.
+1. กำหนด Script Properties: `SPREADSHEET_ID` และ `ADMIN_TOKEN`
+2. รัน `setup` หนึ่งครั้งเพื่อสร้างชีตและโฟลเดอร์สลิปส่วนตัว
+3. ตั้งค่า `Settings` เช่น EVENT_NAME, EVENT_DESCRIPTION, POSTER_URL, LOGO_URL, BANK_ACCOUNT_HOLDER และ SUPPORT_CONTACT
+4. Sync source ด้วย `clasp push`; จาก Apps Script ให้แก้ไข **deployment เดิม** แล้วเลือกเวอร์ชันใหม่ ไม่ต้องสร้าง URL ใหม่
+5. เปิดหน้าเจ้าหน้าที่ด้วย URL เดิมตามด้วย `?page=admin`
 
-## Ticket-staff guide
+ไม่ควรเปิดโฟลเดอร์ Google Drive ของสลิปเป็นสาธารณะ และห้ามแก้สถานะ Bookings โดยตรงในชีต
 
-Open the web-app URL with `?page=admin`, enter the admin access token, then review the prominent queue. Use **View slip**, then **Confirm payment** or **Reject payment** (optional note). Confirming keeps reservation; rejecting releases it. The dashboard refreshes immediately. Never edit the `Bookings` status manually—use the dashboard to preserve the audit trail.
+## ทดสอบ
 
-## Customer smoke test
+รัน `npm test` ชุดทดสอบครอบคลุมกติกา M1 และ M2: ความจุ/สถานะ, การคำนวณรายได้และตัวนับ, Thai status/date, การค้นหา, warning เบอร์ซ้ำ และ CSV escaping
 
-1. Run setup in a blank Sheet and deploy the app.
-2. Verify four performance cards; submit 2 tickets at THB 240 using a small test JPEG/PNG.
-3. Confirm the booking is `WAITING_PAYMENT_REVIEW` and the selected show becomes 48 remaining.
-4. In Admin, open the slip, confirm the booking, and verify it remains 48 remaining.
-5. Make another booking; reject it, then reject again. Its quota returns once only.
-6. Submit more than the remaining capacity and confirm it is rejected with no booking created.
+## Owner inputs ที่ควรตั้งก่อนใช้งานจริง
 
-## Tests
+ชื่อและคำอธิบายงาน, สถานที่, poster, logo, ชื่อเจ้าของบัญชี และช่องทางติดต่อ
 
-Run `npm test`. Tests cover the pure domain rules: availability, sold-out/final-seat boundaries, quantity validation, status transitions/release idempotency, and spreadsheet formula injection. LockService, Drive, and Apps Script authorization require the smoke test above.
-
-## Future automated slip verification
-
-`PaymentVerifier.gs` is the boundary for a future provider. M1 returns `PENDING` and preserves manual review; a future provider returns a normalized accept/reject decision and uses the same status transition. No capacity code needs to change.
-
-## Backup and troubleshooting
-
-Export the Sheet regularly and keep the Drive folder. If the app says admin is not configured, create `ADMIN_TOKEN` in Script Properties and redeploy. If a customer cannot upload, use JPEG/PNG/WEBP smaller than 5 MB. If a performance should change, edit `Performances` deliberately; never lower capacity below existing reserved tickets.
+คู่มือทีมงาน: [OPERATOR_GUIDE.md](OPERATOR_GUIDE.md)
