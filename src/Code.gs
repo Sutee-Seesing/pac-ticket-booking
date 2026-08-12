@@ -1,7 +1,7 @@
 /* PAC ticket booking M1. Sheet bookings are the capacity source of truth. */
 var CONFIG = { SHEETS: { SETTINGS:'Settings', PERFORMANCES:'Performances', BOOKINGS:'Bookings', AUDIT:'AuditLog' }, MAX_SLIP_BYTES: 5 * 1024 * 1024, ALLOWED_MIME: ['image/jpeg','image/png','image/webp'] };
 // Update this deliberately for each source change that needs live-deployment tracing.
-var BUILD_ID = '5116060-bootstrap-diagnostics';
+var BUILD_ID = 'cae2371-json-config';
 var HEADERS = {
   Settings:['key','value'],
   Performances:['performance_id','date','start_time','capacity','active'],
@@ -20,6 +20,8 @@ function setup() {
   return 'Setup complete. Configure account holder and support contact in Settings.';
 }
 function getPublicConfig() { var s=getSettings_(); return { eventName:s.EVENT_NAME, description:s.EVENT_DESCRIPTION, posterUrl:s.POSTER_URL, logoUrl:s.LOGO_URL, ticketPrice:Number(s.TICKET_PRICE), bankName:s.BANK_NAME, accountNumber:s.BANK_ACCOUNT_NUMBER, accountHolder:s.BANK_ACCOUNT_HOLDER, support:s.SUPPORT_CONTACT, performances:getPerformances_() }; }
+// JSON avoids HTML Service object-serialization ambiguity and is validated in the browser.
+function getPublicConfigJson() { return JSON.stringify(getPublicConfig()); }
 function getPerformances_() { var bookings=getRows_(CONFIG.SHEETS.BOOKINGS); return getRows_(CONFIG.SHEETS.PERFORMANCES).filter(function(p){return String(p.active).toLowerCase() === 'true';}).map(function(p){ p.date=isoDate_(p.date); p.start_time=timeText_(p.start_time); p.capacity=Number(p.capacity); p.remaining=BookingDomain.availability(p,bookings); p.available=p.remaining>0; return p; }); }
 function submitBooking(payload) {
   var lock=LockService.getScriptLock(); lock.waitLock(30000); try {

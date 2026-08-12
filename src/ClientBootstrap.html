@@ -1,6 +1,7 @@
 var ClientBootstrap=(function(){
   function fail(message){throw new Error(message);}
   function number(value,label){if(typeof value!=='number'||!isFinite(value))fail(label+' must be a number.');}
+  function parseConfig(raw){if(typeof raw!=='string'||!raw)fail('Configuration response is missing.');try{return JSON.parse(raw);}catch(error){fail('Configuration response is not valid JSON.');}}
   function validateConfig(data){
     if(!data||typeof data!=='object')fail('Configuration response is missing.');
     if(typeof data.eventName!=='string'||!data.eventName.trim())fail('eventName is missing.');
@@ -15,5 +16,5 @@ var ClientBootstrap=(function(){
     });
     return data;
   }
-  return {validateConfig:validateConfig};
+  return {parseConfig:parseConfig,validateConfig:validateConfig};
 })();

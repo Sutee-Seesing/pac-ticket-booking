@@ -13,6 +13,15 @@ test('accepts a complete public configuration response', () => {
   assert.equal(validate(data), data);
 });
 
+test('parses a JSON configuration response from Apps Script', () => {
+  const parsed = validate(context.ClientBootstrap.parseConfig(JSON.stringify({ eventName:'PAC', ticketPrice:120, performances:[performance] })));
+  assert.equal(JSON.stringify(parsed), JSON.stringify({ eventName:'PAC', ticketPrice:120, performances:[performance] }));
+});
+
+test('rejects an empty Apps Script response', () => {
+  assert.throws(() => context.ClientBootstrap.parseConfig(undefined), /Configuration response is missing/);
+});
+
 test('rejects a missing performances array', () => {
   assert.throws(() => validate({ eventName:'PAC', ticketPrice:120 }), /performances is not an array/);
 });
