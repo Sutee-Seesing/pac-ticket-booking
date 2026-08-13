@@ -1,4 +1,8 @@
-(function(){window.addEventListener('DOMContentLoaded',function(){
+(function(){
+  var logoStyle=document.createElement('style');
+  logoStyle.textContent='.hero .logo{filter:none!important;mix-blend-mode:screen}';
+  document.head.appendChild(logoStyle);
+  window.addEventListener('DOMContentLoaded',function(){
   function normalize(value){
     var digits=String(value||'').replace(/\D/g,'');
     if(/^66[6-9]\d{8}$/.test(digits)) digits='0'+digits.slice(2);
