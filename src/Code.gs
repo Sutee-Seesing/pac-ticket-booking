@@ -42,7 +42,17 @@ function submitBooking(payload) {
     sheet_(CONFIG.SHEETS.BOOKINGS).appendRow(row); audit_(code,'',BookingDomain.STATES.WAITING,'BOOKING_CREATED','customer',JSON.stringify({quantity:qty,slipId:slipId,pricingType:pricing.pricingType})); return success_({booking_code:code,performance_date:perf.date,performance_time:perf.start_time,ticket_quantity:qty,total_amount:pricing.total,status:BookingDomain.STATES.WAITING,pricing:pricing});
   } finally { lock.releaseLock(); }
 }
-function lookupBooking(code, phone) { var b=getRows_(CONFIG.SHEETS.BOOKINGS).filter(function(x){return x.booking_code===String(code).trim() && String(x.customer_phone)===String(phone).trim();})[0]; if(!b) throw new Error('ไม่พบข้อมูลการจอง กรุณาตรวจสอบรหัสและเบอร์โทรศัพท์'); return {code:b.booking_code,performance:BookingDomain.thaiDateTime(isoDate_(b.performance_date),timeText_(b.performance_time)),quantity:Number(b.ticket_quantity),total:Number(b.total_amount),status:friendly_(b.status),note:b.status===BookingDomain.STATES.REJECTED ? String(b.admin_note||'') : ''}; }
+function lookupBooking(phone) {
+  var normalizedPhone=String(phone||'').replace(/\D/g,'');
+  if(!normalizedPhone) throw new Error('กรุณากรอกเบอร์โทรศัพท์');
+  var bookings=getRows_(CONFIG.SHEETS.BOOKINGS).filter(function(x){
+    return String(x.customer_phone||'').replace(/\D/g,'')===normalizedPhone;
+  });
+  if(!bookings.length) throw new Error('ไม่พบข้อมูลการจอง กรุณาตรวจสอบเบอร์โทรศัพท์');
+  return bookings.map(function(b){
+    return {code:b.booking_code,performance:BookingDomain.thaiDateTime(isoDate_(b.performance_date),timeText_(b.performance_time)),quantity:Number(b.ticket_quantity),total:Number(b.total_amount),status:friendly_(b.status),note:b.status===BookingDomain.STATES.REJECTED ? String(b.admin_note||'') : ''};
+  });
+}
 function getAdminDashboard(token) { return getAdminData_(token,{}); }
 // JSON avoids HTML Service object-serialization ambiguity for the admin dashboard too.
 function getAdminDashboardJson(token) { return JSON.stringify(getAdminDashboard(token)); }
