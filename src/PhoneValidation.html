@@ -1,0 +1,13 @@
+(function(){window.addEventListener('DOMContentLoaded',function(){
+  function normalize(value){
+    var digits=String(value||'').replace(/\D/g,'');
+    if(/^66[6-9]\d{8}$/.test(digits)) digits='0'+digits.slice(2);
+    return digits;
+  }
+  function valid(value){return /^0[6-9]\d{8}$/.test(value);}
+  function prepare(id){var input=document.getElementById(id), phone=normalize(input.value);input.value=phone;return phone;}
+  ['phone','lookupPhone'].forEach(function(id){var input=document.getElementById(id);input.addEventListener('input',function(){this.value=normalize(this.value);});});
+  var previousGoPayment=window.goPayment, previousLookup=window.lookup;
+  window.goPayment=function(){var phone=prepare('phone');if(!valid(phone))return notice('กรุณากรอกเบอร์มือถือไทย 10 หลัก เช่น 0957635336','error');return previousGoPayment();};
+  window.lookup=function(){var phone=prepare('lookupPhone');if(!valid(phone))return notice('กรุณากรอกเบอร์มือถือไทย 10 หลัก เช่น 0957635336','error');return previousLookup();};
+});})();

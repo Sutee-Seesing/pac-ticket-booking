@@ -17,6 +17,7 @@ test('14 status transition rules',()=>{assert.equal(D.canTransition(D.STATES.WAI
 test('15 completed booking cannot retry transition',()=>assert.equal(D.canTransition(D.STATES.CONFIRMED,D.STATES.CANCELLED),false));
 test('16 booking IDs are readable and unique by sequence',()=>{assert.equal(D.bookingCode('2026-08-21','17:00',1),'PAC-0821-1700-001');assert.notEqual(D.bookingCode('2026-08-21','17:00',1),D.bookingCode('2026-08-21','17:00',2))});
 test('17 invalid booking sequence rejected',()=>assert.throws(()=>D.bookingCode('2026-08-21','17:00',0)));
+test('18 Thai mobile numbers normalize to ten digits',()=>{assert.equal(D.normalizeThaiMobile('095-763-5336'),'0957635336');assert.equal(D.normalizeThaiMobile('+66 95 763 5336'),'0957635336');assert.equal(D.normalizeThaiMobile('957635336'),'0957635336');assert.equal(D.normalizeThaiMobile('1234567890'),null)});
 test('18 formula injection neutralized',()=>assert.equal(D.escapeCell('=2+2'),"'=2+2"));
 test('19 plain text preserved',()=>assert.equal(D.escapeCell('Ada'),'Ada'));
 test('20 Thai-facing status mapper never exposes internal status',()=>assert.equal(D.statusLabel(D.STATES.WAITING),'รอตรวจสอบสลิป'));

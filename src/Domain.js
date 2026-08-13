@@ -13,6 +13,12 @@ var BookingDomain = (function () {
   }
   function releaseRequired(from, to) { return (from === STATES.WAITING || from === STATES.CONFIRMED) && (to === STATES.REJECTED || to === STATES.CANCELLED); }
   function bookingCode(date, time, sequence) { if (!Number.isInteger(sequence) || sequence < 1) throw new Error('Invalid booking sequence.'); return 'PAC-' + String(date).replace(/-/g, '').slice(4) + '-' + String(time).replace(':', '') + '-' + ('000' + sequence).slice(-3); }
+  function normalizeThaiMobile(value) {
+    var digits=String(value == null ? '' : value).replace(/\D/g,'');
+    if (/^66[6-9]\d{8}$/.test(digits)) digits='0'+digits.slice(2);
+    if (/^[6-9]\d{8}$/.test(digits)) digits='0'+digits;
+    return /^0[6-9]\d{8}$/.test(digits) ? digits : null;
+  }
   function escapeCell(value) { var s = String(value == null ? '' : value); return /^[=+\-@]/.test(s) ? "'" + s : s; }
   function statusLabel(status) {
     return ({ WAITING_PAYMENT_REVIEW:'รอตรวจสอบสลิป', CONFIRMED:'ยืนยันแล้ว', REJECTED:'ปฏิเสธ', CANCELLED:'ยกเลิก' })[status] || 'ไม่ทราบสถานะ';
@@ -45,6 +51,6 @@ var BookingDomain = (function () {
   function salesCloseAt(performance) { return performance.sales_close_at || (String(performance.date).slice(0,10)+'T23:59:59+07:00').replace(/^(\d{4}-\d{2}-\d{2})/,function(date){var d=new Date(date+'T12:00:00Z');d.setUTCDate(d.getUTCDate()-1);return d.toISOString().slice(0,10);}); }
   function onlineSalesOpen(performance, now) { return parseBangkok(now)<=parseBangkok(salesCloseAt(performance)); }
   function salesState(performance, bookings, now) { var remaining=availability(performance,bookings); if(remaining<=0)return 'SOLD_OUT'; return onlineSalesOpen(performance,now)?'AVAILABLE':'ONLINE_CLOSED'; }
-  return { STATES: STATES, intQuantity: intQuantity, assertQuantity: assertQuantity, availability: availability, canTransition: canTransition, releaseRequired: releaseRequired, bookingCode: bookingCode, escapeCell: escapeCell, statusLabel:statusLabel, thaiDateTime:thaiDateTime, bookingMetrics:bookingMetrics, matchBooking:matchBooking, hasDuplicateActive:hasDuplicateActive, csvEscape:csvEscape, calculateBookingPrice:calculateBookingPrice, salesCloseAt:salesCloseAt, onlineSalesOpen:onlineSalesOpen, salesState:salesState };
+  return { STATES: STATES, intQuantity: intQuantity, assertQuantity: assertQuantity, availability: availability, canTransition: canTransition, releaseRequired: releaseRequired, bookingCode: bookingCode, normalizeThaiMobile:normalizeThaiMobile, escapeCell: escapeCell, statusLabel:statusLabel, thaiDateTime:thaiDateTime, bookingMetrics:bookingMetrics, matchBooking:matchBooking, hasDuplicateActive:hasDuplicateActive, csvEscape:csvEscape, calculateBookingPrice:calculateBookingPrice, salesCloseAt:salesCloseAt, onlineSalesOpen:onlineSalesOpen, salesState:salesState };
 }());
 if (typeof module !== 'undefined') module.exports = BookingDomain;
