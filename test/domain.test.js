@@ -29,6 +29,26 @@ const rows=[
  {booking_code:'PAC-004',customer_name:'C',customer_phone:'0801111111',performance_id:'P2',ticket_quantity:4,status:D.STATES.CANCELLED}
 ];
 test('22 M2 metrics distinguish booking, ticket, and confirmed revenue',()=>{const m=D.bookingMetrics(rows,120);assert.deepEqual(m.waiting,{bookings:1,tickets:2});assert.deepEqual(m.confirmed,{bookings:1,tickets:3});assert.equal(m.confirmedRevenue,360);assert.equal(m.rejected.bookings,1);assert.equal(m.cancelled.tickets,4)});
+test('confirmed normal booking uses stored total',()=>assert.equal(D.bookingMetrics([{ticket_quantity:2,total_amount:240,status:D.STATES.CONFIRMED}],120).confirmedRevenue,240));
+test('confirmed promo booking uses stored total instead of base price',()=>assert.equal(D.bookingMetrics([{ticket_quantity:2,total_amount:200,status:D.STATES.CONFIRMED}],120).confirmedRevenue,200));
+test('multiple confirmed bookings sum stored totals',()=>assert.equal(D.bookingMetrics([
+ {ticket_quantity:2,total_amount:200,status:D.STATES.CONFIRMED},
+ {ticket_quantity:1,total_amount:120,status:D.STATES.CONFIRMED},
+ {ticket_quantity:4,total_amount:400,status:D.STATES.CONFIRMED}
+],120).confirmedRevenue,720));
+test('waiting booking is excluded from confirmed revenue',()=>assert.equal(D.bookingMetrics([{ticket_quantity:2,total_amount:200,status:D.STATES.WAITING}],120).confirmedRevenue,0));
+test('rejected booking is excluded from confirmed revenue',()=>assert.equal(D.bookingMetrics([{ticket_quantity:2,total_amount:240,status:D.STATES.REJECTED}],120).confirmedRevenue,0));
+test('cancelled booking is excluded from confirmed revenue',()=>assert.equal(D.bookingMetrics([{ticket_quantity:2,total_amount:240,status:D.STATES.CANCELLED}],120).confirmedRevenue,0));
+test('mixed statuses include only confirmed stored totals',()=>assert.equal(D.bookingMetrics([
+ {ticket_quantity:2,total_amount:200,status:D.STATES.CONFIRMED},
+ {ticket_quantity:1,total_amount:120,status:D.STATES.CONFIRMED},
+ {ticket_quantity:3,total_amount:400,status:D.STATES.WAITING},
+ {ticket_quantity:2,total_amount:240,status:D.STATES.REJECTED},
+ {ticket_quantity:1,total_amount:120,status:D.STATES.CANCELLED}
+],120).confirmedRevenue,320));
+test('confirmed row with missing total falls back to base price',()=>assert.equal(D.bookingMetrics([{ticket_quantity:2,total_amount:'',status:D.STATES.CONFIRMED}],120).confirmedRevenue,240));
+test('confirmed row with invalid total falls back safely',()=>assert.equal(D.bookingMetrics([{ticket_quantity:2,total_amount:'not-a-number',status:D.STATES.CONFIRMED}],120).confirmedRevenue,240));
+test('revenue fix preserves confirmed ticket metrics',()=>assert.deepEqual(D.bookingMetrics([{ticket_quantity:2,total_amount:200,status:D.STATES.CONFIRMED}],120).confirmed,{bookings:1,tickets:2}));
 test('23 search supports booking code, name, and partial phone',()=>{assert.ok(D.matchBooking(rows[0],'PAC-001'));assert.ok(D.matchBooking(rows[0],'ใจดี'));assert.ok(D.matchBooking(rows[0],'4432'));assert.ok(!D.matchBooking(rows[0],'9999'))});
 test('24 performance and active-phone duplicate warning detected',()=>assert.equal(D.hasDuplicateActive(rows[0],[...rows,{booking_code:'PAC-005',customer_phone:'0812344432',performance_id:'P1',status:D.STATES.CONFIRMED,ticket_quantity:1}]),true));
 test('25 CSV output escapes Thai text, commas and quotes',()=>assert.equal(D.csvEscape('สมหญิง, "PAC"'),'"สมหญิง, ""PAC"""'));

@@ -35,8 +35,15 @@ var BookingDomain = (function () {
   function bookingMetrics(bookings, price) {
     var by=function(status){return bookings.filter(function(b){return b.status===status;});};
     var summary=function(rows){return { bookings:rows.length, tickets:rows.reduce(function(n,b){return n+Number(b.ticket_quantity||0);},0) };};
-    var waiting=summary(by(STATES.WAITING)), confirmed=summary(by(STATES.CONFIRMED)), rejected=summary(by(STATES.REJECTED)), cancelled=summary(by(STATES.CANCELLED));
-    return { waiting:waiting, confirmed:confirmed, rejected:rejected, cancelled:cancelled, confirmedRevenue:confirmed.tickets*Number(price||0) };
+    var waitingRows=by(STATES.WAITING), confirmedRows=by(STATES.CONFIRMED), rejectedRows=by(STATES.REJECTED), cancelledRows=by(STATES.CANCELLED);
+    var waiting=summary(waitingRows), confirmed=summary(confirmedRows), rejected=summary(rejectedRows), cancelled=summary(cancelledRows);
+    var basePrice=Number(price||0);
+    var confirmedRevenue=confirmedRows.reduce(function(sum,b){
+      var storedText=String(b.total_amount==null?'':b.total_amount).trim();
+      var storedTotal=storedText===''?NaN:Number(storedText);
+      return sum+(Number.isFinite(storedTotal)&&storedTotal>=0 ? storedTotal : Number(b.ticket_quantity||0)*basePrice);
+    },0);
+    return { waiting:waiting, confirmed:confirmed, rejected:rejected, cancelled:cancelled, confirmedRevenue:confirmedRevenue };
   }
   function matchBooking(b, query) { var q=String(query||'').trim().toLowerCase(); if(!q)return true; return [b.booking_code,b.customer_name,b.customer_phone].some(function(v){return String(v||'').toLowerCase().indexOf(q)>=0;}); }
   function hasDuplicateActive(b, all) { return all.filter(function(x){return x.booking_code!==b.booking_code && x.performance_id===b.performance_id && String(x.customer_phone)===String(b.customer_phone) && (x.status===STATES.WAITING||x.status===STATES.CONFIRMED);}).length>0; }
